@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { ProductsContext } from "./ProductsContext";
 
+const API = `${import.meta.env.VITE_API_URL}/api/products`;
+
 export default function ProductsProvider({ children }) {
   const [products, setProducts] = useState([]);
-  const API = "http://localhost:3001/api/products";
 
   const getProducts = async () => {
     try {
@@ -19,12 +20,9 @@ export default function ProductsProvider({ children }) {
     try {
       const res = await fetch(API, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(product),
       });
-
       const data = await res.json();
       setProducts([...products, data]);
     } catch (error) {
@@ -34,10 +32,7 @@ export default function ProductsProvider({ children }) {
 
   const deleteProduct = async (id) => {
     try {
-      await fetch(`${API}/${id}`, {
-        method: "DELETE",
-      });
-
+      await fetch(`${API}/${id}`, { method: "DELETE" });
       setProducts(products.filter((p) => p._id !== id));
     } catch (error) {
       console.error(error);
@@ -49,14 +44,7 @@ export default function ProductsProvider({ children }) {
   }, []);
 
   return (
-    <ProductsContext.Provider
-      value={{
-        products,
-        addProduct,
-        deleteProduct,
-        getProducts,
-      }}
-    >
+    <ProductsContext.Provider value={{ products, addProduct, deleteProduct, getProducts }}>
       {children}
     </ProductsContext.Provider>
   );
