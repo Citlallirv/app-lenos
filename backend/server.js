@@ -13,7 +13,10 @@ const app = express();
  
 connectDB();
  
-// HEALTH CHECK — antes de todo middleware (no requiere CORS)
+// Necesario para Render/proxies (fix rate-limit ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
+app.set("trust proxy", 1);
+ 
+// HEALTH CHECK — antes de todo middleware
 app.get("/health", (req, res) => {
   res.json({ status: "healthy" });
 });
@@ -35,12 +38,9 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin && process.env.NODE_ENV !== "production") {
-        return callback(null, true);
-      }
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+      // Sin origin = navegador directo o Postman, permitir siempre
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       callback(new Error("No permitido por CORS"));
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -50,7 +50,7 @@ app.use(
  
 app.use(express.json());
  
-// RATE LIMIT — 10 peticiones por minuto 
+// RATE LIMIT — 10 peticiones por minuto (rúbrica 1.1)
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
@@ -60,7 +60,7 @@ const limiter = rateLimit({
 });
 app.use("/api/v1/comentarios", limiter);
  
-// API KEY 
+// API KEY (rúbrica Fase 4)
 const validateApiKey = (req, res, next) => {
   if (process.env.API_KEY) {
     const key = req.headers["x-api-key"];
@@ -78,7 +78,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/v1/usuario", usuarioRoutes);
 app.use("/api/v1/comentarios", comentariosRoutes);
  
-// LOGS SEGUROS 
+// LOGS SEGUROS (rúbrica 4.1)
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   if (process.env.NODE_ENV !== "production") {
@@ -87,5 +87,3 @@ app.listen(PORT, () => {
     console.log("Servidor iniciado");
   }
 });
- 
-
